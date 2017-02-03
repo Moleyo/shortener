@@ -15,24 +15,33 @@ mongo.connect('mongodb://localhost:27017/database', function(err, database) {
   })  
 });
 
-app.use('/new/:shortenMe', function (req, res) {
+app.all('/new/:shortenMe*', function (req, res) {
   //if valid url shorten it
-  if(validUrl.isUri(req.params.shortenMe)){ 
+  var fullUrl = req.params.shortenMe + req.params['0'];
+  
+  if(validUrl.isUri(fullUrl)){
       
-      var urls = db.collection('urls');
-      rand = Math.random() * (10000 - 1000) + 1000;
-      //while rand is not unique
-      while(rand == false){
-          
-      }
-      var url = {
-        'code' : rand,
-        'short':  req.params.shortenMe
-      }
-       urls.insert(url, function(err, data) {
-          if(err){throw err}
-          res.send({ "original_url": req.params.shortenMe, "short_url":data });
-        })
+      var urls = db.collection('urls'), url;
+      
+      (function insertShortenedUrl() {
+        rand = Math.round(Math.random() * (10000 - 1000) + 1000);
+         urls.find( { 'code': rand } ).toArray(function(error, documents) {
+            if (error) throw error;
+            if(documents.length === 0){
+              url = {
+                'code' : rand,
+                'fullUrl': fullUrl
+              }
+               urls.insert(url, function(err, data) {
+                  if(err){throw err}
+                  res.send({ "original_url": fullUrl, "short_url": 'https://api-projects-moleyo1.c9users.io/' + data.ops[0].code });
+                })
+            }
+            else{
+              insertShortenedUrl();
+            }
+        });
+      }());
   }
   else{
     res.send('You have not provided a valid url. I am dissapoint.');
@@ -45,7 +54,9 @@ app.get('/:id', function (req, res) {
       urls.find( { 'code': +req.params.id } ).toArray(function(error, documents) {
             if (error) throw error;
             if(documents.length){
-                res.redirect(documents[0]);
+                res.redirect(documents[0].fullUrl);
+                res.end();
+                //res.send(documents[0].fullUrl);
             }
             //else if not on database
             else{
@@ -56,5 +67,5 @@ app.get('/:id', function (req, res) {
 
 app.get('/', function (req, res) {
   //homepage
-  res.send('example of url to give: https://api-projects-moleyo1.c9users.io/new//new/http://fishsticks.com');
+  res.send('example of url to give: https://api-projects-moleyo1.c9users.io/new/http://fishsticks.com');
 })
