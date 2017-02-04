@@ -5,8 +5,11 @@ var mongo = require('mongodb').MongoClient;
 var validUrl = require('valid-url');
 var app = express()
 var rand, db;
+var localDatabaseUrl = 'mongodb://localhost:27017/shortener';
+//var databaseUrl = 'mongodb://moleyo:freecodecamp@ds139879.mlab.com:39879/shortener';
+var databaseUrl = process.env.MONGOLAB_URI;
 
-mongo.connect('mongodb://localhost:27017/database', function(err, database) {
+mongo.connect(databaseUrl, function(err, database) {
   if(err) throw err;
   db = database;
   // Start the application after the database connection is ready
